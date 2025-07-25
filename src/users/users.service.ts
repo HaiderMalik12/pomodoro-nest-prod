@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 
 @Injectable()
 export class UsersService {
+    
     constructor(
         @InjectRepository(User) private readonly userRepository: Repository<User>
     ) {}
@@ -16,7 +17,7 @@ export class UsersService {
     }
     
     // Example method to find a user by email
-    async findUserByEmail(email: string): Promise<any> {
-        // Logic to find a user by email in the database
-    }
+    async findUserByEmail(email: string): Promise<User | null> {
+       return this.userRepository.findOne({ where: { email } });
+    }   
 }
