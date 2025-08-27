@@ -7,6 +7,11 @@ import { LoginDTO } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly jwtService: JwtService, // Assuming you have JwtService injected for token generation
+  ) {}
+
   async socialLogin(userData: {
     email: string;
     firstName: string;
@@ -25,10 +30,6 @@ export class AuthService {
     return this.jwtService.sign({ id: user.id, email: user.email });
   }
 
-  constructor(
-    private readonly usersService: UsersService,
-    private readonly jwtService: JwtService, // Assuming you have JwtService injected for token generation
-  ) {}
   async register(createUserDTO: CreateUserDto) {
     // encyrpt the user password here
     // For example, using bcrypt:

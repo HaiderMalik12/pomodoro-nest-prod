@@ -6,18 +6,21 @@ import {
   UseGuards,
   Get,
   Res,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginDTO } from './dto/login.dto';
 import { UsersService } from 'src/users/users.service';
 import { AuthGuard } from '@nestjs/passport';
+import { TwoFAService } from './2fa.service';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private authService: AuthService,
     private userServce: UsersService,
+    private twoFAService: TwoFAService,
   ) {}
 
   @Post('register')
@@ -107,5 +110,18 @@ export class AuthController {
       path: '/', // Cookie path
     });
     return res.redirect('http://localhost:3000/dashboard'); // Redirect to your frontend or desired URL
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Post('2fa/generate')
+  async generateTwoFactorAuthSecret(@Req() req: any) {
+    const user = req.user;
+    const secret = this.twoFAService.generateSecret(user.email);
+    await this.userServce.setTwoFASecret(user.id, secret.base32);
+    if (!secret.otpauth_url) {
+      throw new Error('OTP Auth URL is missing');
+    }
+    const qrCode = await this.twoFAService.generateQRCode(secret.otpauth_url);
+    return { qrCode, secret: secret.base32 };
   }
 }
