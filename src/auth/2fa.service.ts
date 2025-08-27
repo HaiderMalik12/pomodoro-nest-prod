@@ -13,4 +13,13 @@ export class TwoFAService {
   generateQRCode(otpauthUrl: string) {
     return qrcode.toDataURL(otpauthUrl);
   }
+
+  verifyCode(secret: string, code: string): boolean {
+    return speakeasy.totp.verify({
+      secret,
+      encoding: 'base32',
+      token: code,
+      window: 1, // Allow a 1-step window (30 seconds before or after)
+    });
+  }
 }
