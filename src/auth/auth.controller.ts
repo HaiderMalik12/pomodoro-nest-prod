@@ -13,7 +13,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { LoginDTO } from './dto/login.dto';
 import { UsersService } from 'src/users/users.service';
 import { AuthGuard } from '@nestjs/passport';
-import { TwoFAService } from './2fa.service';
+import { TwoFAService } from './two-fa.service';
 
 @Controller('auth')
 export class AuthController {
