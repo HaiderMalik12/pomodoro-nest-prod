@@ -14,6 +14,7 @@ import { LoginDTO } from './dto/login.dto';
 import { UsersService } from 'src/users/users.service';
 import { AuthGuard } from '@nestjs/passport';
 import { TwoFAService } from './two-fa.service';
+import { TwoFaGuard } from './twofa.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -38,6 +39,12 @@ export class AuthController {
   ): Promise<{ message: string; twoFaRequired?: boolean }> {
     const { token, user } = await this.authService.login(loginDTO);
     if (user.isTwoFAEnabled) {
+      res.cookie('pending_user', user.id, {
+        httpOnly: true,
+        sameSite: 'lax', // Use 'lax' for CSRF protection
+        secure: process.env.NODE_ENV === 'production', // Set to true in production
+        maxAge: 5 * 60 * 1000, // 5 minutes
+      });
       return { message: '2FA required', twoFaRequired: true };
     }
     // return { token }; // Return the generated JWT token
@@ -143,10 +150,14 @@ export class AuthController {
     return { message: '2FA enabled successfully', success: true };
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(TwoFaGuard)
   @Post('2fa/verify')
-  async verifyTwoFactorAuthCode(@Req() req: any, @Body('code') code: string) {
-    const user = await this.userServce.findUserByEmail(req.user.email);
+  async verifyTwoFactorAuthCode(
+    @Req() req: any,
+    @Body('code') code: string,
+    @Res({ passthrough: true }) res: any,
+  ) {
+    const user = await this.userServce.findUserById(+req.user.id);
     if (!user || !user.twoFactorSecret) {
       throw new UnauthorizedException('2FA not set up for this user');
     }
@@ -154,6 +165,15 @@ export class AuthController {
     if (!verified) {
       throw new UnauthorizedException('Invalid 2FA code');
     }
+    const payload = { id: user.id, email: user.email };
+    const token = this.authService.generateJwtToken(payload);
+    res.cookie('access_token', token, {
+      httpOnly: true,
+      sameSite: 'lax', // Use 'lax' for CSRF protection
+      secure: process.env.NODE_ENV === 'production', // Set to true in production
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+      path: '/', // Cookie path
+    });
     return { message: '2FA verification successful', success: true };
   }
 }

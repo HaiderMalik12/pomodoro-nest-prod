@@ -27,4 +27,8 @@ export class UsersService {
   async enableTwoFA(id: number) {
     return this.userRepository.update({ id }, { isTwoFAEnabled: true });
   }
+
+  async findUserById(id: number): Promise<User | null> {
+    return this.userRepository.findOne({ where: { id } });
+  }
 }
