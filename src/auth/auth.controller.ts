@@ -35,8 +35,11 @@ export class AuthController {
   async login(
     @Body() loginDTO: LoginDTO,
     @Res({ passthrough: true }) res: any,
-  ): Promise<{ message: string }> {
-    const token = await this.authService.login(loginDTO);
+  ): Promise<{ message: string; twoFaRequired?: boolean }> {
+    const { token, user } = await this.authService.login(loginDTO);
+    if (user.isTwoFAEnabled) {
+      return { message: '2FA required', twoFaRequired: true };
+    }
     // return { token }; // Return the generated JWT token
     res.cookie('access_token', token, {
       httpOnly: true,
